@@ -1,0 +1,387 @@
+---
+title: "RMFinventory vignette"
+author: "Martin Queinnec"
+output:
+  html_document:
+    df_print: paged
+vignette: |
+  %\VignetteIndexEntry{Worflow} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+This vignette presents the sampling and ABA modeling approaches that were used for the enhanced forest inventory (EFI) pilot project at Romeo Malette Forest (RMF) using Leica SPL100 lidar (SPL) data collected wall-to-wall during the summer of 2018. The package (and this vignette) are written for the RMNF project but the intent is to make the overall approach applicable to other forest management units.
+
+First, we will perform a structurally-guided stratified sampling to select locations for new plots establishement. Then, we will detail how plot-level forest attribute data can be calculated or modeled from published allometric equations. Finally, we will use the field inventory data and the SPL point cloud to build random forest predicitve models and generate wall-to-wall maps of forest attributes. 
+
+We start by loading the packages that we are going to use
+
+```{r setup, message = FALSE}
+library(RMFinventory)
+library(raster)
+library(sf)
+library(dplyr)
+library(RStoolbox)
+library(ggplot2)
+```
+
+# Stratified random sampling of cells for new plots establishement
+
+When generating forest inventory attributes using an area-based-approach (ABA), the ground plots data used to calibrate ABA regression models need to be representative as much as possible of the full range of forest structure variability within the study area. If this is not the case, regression models might perform poorly in underrepresented forest types (White et al., 2013). Lidar metrics such as height percentiles, cover or height variability can be used to design a sampling network driven by forest structure.
+
+Principal Component Analysis (PCA) is a method used to summarize the variability of a large number of highly correlated LiDAR structural metrics into a smaller number of uncorrelated variables. The feature space created by the generated principal components can then be stratified into classes that will represent specific types of forest structural conditions. Random sampling can then be performed within each of these classes to ensure a representative characterization of all forest structures occurring across the study area. 
+
+## Calculate PCA values of candidate cells
+
+We assume that a set of lidar metrics have been calculated across the entire study area and that candidate cells for new plots establishment have been determined using criteria such as distance and access to roads, forested land cover etc. 
+
+Note that the resolution of the lidar metrics maps is determined based on the size of the plots that will be established. It is important the the area of each cell (pixel) corresponds to the area of the plots. For fixed-radius circular plots of 11.28 m radius, corresponding to 400 m2, the resolution should be 20 m x 20 m. 
+
+In the example of RMF, we selected only cells located between 30 m and 200 m from roads and forest inventory polygons determined from photo interpretation, were used to select only cells considered to be forested. 
+
+```{r open candidate cells}
+# Open raster of wall to wall metrics
+wall_metrics <- brick(system.file("extdata","wall_metrics_small.tif", package = "RMFinventory"))
+names(wall_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
+
+# Plot wall-to-wall
+plot(wall_metrics$p95, zlim = c(0, 30), main = "Wall to wall")
+
+candidate_metrics <- brick(system.file("extdata","candidate_metrics_small.tif", package = "RMFinventory"))
+names(candidate_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
+
+
+# Plot candidate metrics
+plot(candidate_metrics$p95, zlim = c(0, 30), main = "Candidates")
+```
+
+We calculate PCA values from the lidar metrics located in forested cells using the `rasterPCA` function from the `RStoolbox` package.
+
+```{r Get PCA model}
+PCA <- RStoolbox::rasterPCA(wall_metrics, nComp = 2, spca = TRUE, maskCheck = FALSE)
+# nComp = 2, we return the two first principal components
+# spca = TRUE, since metrics have different ranges of values the fucntion will center and scale the metrics
+# maskCheck = FALSE, we don't check if some pixels have NA value in one or more layers. If not sure, set to TRUE
+
+# The output of rasterPCA is a list with an element model which contains the PCA model and an element map which contains the map of PCA values
+
+PCA_wall <- PCA$map
+plot(PCA_wall)
+
+PCA_model <- PCA$model
+```
+
+We can check the porportion of variance contained in each principal component: 
+
+```{r}
+summary(PCA_model)
+```
+
+## Use PCA model to get PCA values of an existing set of plots
+
+A network of 182 plots was already established in RMF. The objective of the structural guided sampling was to check if the existing plot network was covering the entire range of structural variability and if not, selecting new plots in underrepresented forest types. 
+
+We load the existing set of plots. All the ALS metrics that were calculated to make the PCA model have also been calculated at the plot-level. 
+
+Note: Make sure that the name of metrics used to get the PCA model correspond to the name of the plot-level metrics
+
+
+We can use the `predict` function to get PCA values of the existing set of plots and off the candidate cells 
+
+```{r}
+# Plot-level
+plots_metrics <- st_read(system.file("extdata", "plots_metrics.shp", package = "RMFinventory"))
+
+plots_metrics_coords <- st_coordinates(plots_metrics)
+plots_metrics_df <- plots_metrics %>% st_drop_geometry()
+
+plots_PCA <- as.data.frame(predict(PCA_model, plots_metrics_df))[,c(1,2)]
+colnames(plots_PCA) <- c("PC1", "PC2")
+```
+
+
+```{r, eval = FALSE}
+
+#Candidate cells
+
+# This is the sricpt that would be ran. Since candidates are just a subset of the wall to wall cells, we could also just mask the PCA_wall layer cells tha are not part of the candidate cells. 
+PCA_candidates <- raster::predict(candidate_metrics, model = PCA_model, index = c(1,2),  filename = "path/to/file.tif")
+```
+```{r, include = FALSE}
+PCA_candidates <- raster::predict(object = candidate_metrics, model = PCA_model,index = c(1,2))
+names(PCA_candidates) <- c("PC1", "PC2")
+```
+
+Once PCA values of all forested cells, candidate cells and existing plots have been calculated, it is useful to plot them to visualize their distribution.
+
+```{r}
+df_PCA_wall <- as.data.frame(PCA_wall, na.rm = TRUE, xy = FALSE)
+df_PCA_candidates <- as.data.frame(PCA_candidates, na.rm = TRUE, xy = FALSE)
+
+# Get convex hulls 
+
+hulls_wall_idx <- chull(df_PCA_wall$PC1, df_PCA_wall$PC2)
+hulls_wall <- dplyr::slice(df_PCA_wall[,c("PC1","PC2")],hulls_wall_idx)
+
+hulls_cand_idx <- chull(df_PCA_candidates$PC1, df_PCA_candidates$PC2)
+hulls_cand <- dplyr::slice(df_PCA_candidates[,c("PC1","PC2")],hulls_cand_idx)
+
+ggplot(mapping = aes(x = PC1, y = PC2)) + 
+  geom_polygon(data = hulls_wall, colour = "#440154FF", fill ="#440154FF", alpha = 0.2) +
+  geom_polygon(data = hulls_cand, colour = "orange", fill = NA) + 
+  geom_point(data = df_PCA_candidates, colour = "orange") + 
+  geom_point(data = plots_PCA) + 
+  theme_bw() +
+  coord_equal() +
+  theme(panel.grid = element_blank(),
+        legend.position = "right")
+
+```
+
+## Stratification 
+
+Once PCA values have been calculated we can stratify the PC1 / PC2 feature space. The approach chosen for the RMF was to stratify using equal intervals. 
+
+From the previous plot, we can decide to stratify the feature space into 7 equal interval on the PC1 axis and 5 intervals on the PC2 axis (7 x 5 grid). We can use the function `getPCAstrata` to automatically create the stratification: 
+
+```{r}
+# Determine the number of breaks for the first and second features (PC1 and PC2) 
+strata <- RMFinventory::getPCAstrata(PCA_layer = PCA_candidates,
+                                  nbreaks = c(8, 6), #Since we want a 7 x 5 grid we need 8 x 6 breaks
+                                  summary = TRUE)
+
+
+#getPCAstrata returns a list of three objects
+
+strata_candidates <- strata$strata_layer
+strata_candidates
+plot(strata_candidates)
+
+breaks <- strata$breaks
+breaks
+
+strata$summary
+
+strata$matrix
+
+```
+
+We can use the breaks returned by the `getPCAstrata` function to get the strata of the existing set of plots:
+
+```{r}
+strata <- getPCAstrata(PCA_layer = plots_PCA,
+                             breaks = breaks, # From the precedent call to getPCAstrata
+                             summary = TRUE)
+
+strata_plots <- strata$strata_layer
+strata_plots
+
+strata$summary
+```
+
+Make a new plots with break lines between strata
+
+```{r}
+ggplot(mapping = aes(x = PC1, y = PC2)) + 
+  geom_polygon(data = hulls_wall, colour = "#440154FF", fill ="#440154FF", alpha = 0.2) +
+  geom_polygon(data = hulls_cand, colour = "orange", fill = NA) + 
+  geom_point(data = df_PCA_candidates, colour = "orange") + 
+  geom_point(data = plots_PCA) + 
+  geom_vline(xintercept = breaks$PC1, linetype = "dashed") + 
+  geom_hline(yintercept = breaks$PC2, linetype = "dashed") + 
+  theme_bw() +
+  coord_equal() +
+  theme(panel.grid = element_blank(),
+        legend.position = "right")
+```
+
+## Select new plots
+
+The function `sampleCells` that performs the sampling requires the number of cells to sample for each strata. This can be determined based on the previous feature space plots, total number of plots than can be selected, number of exisiting plots, how many of them should be re-measured etc. 
+
+The following figure illustrates the sampling process: 
+
+```{r , echo=FALSE, fig.cap="Sampling process diagram", out.width = '100%'}
+knitr::include_graphics(system.file("extdata","figures","Flow_RMF_sampling.png", package = "RMFinventory"))
+```
+
+```{r}
+toSample <- read.csv(system.file("extdata","cells_to_sample.csv", package = "RMFinventory"), stringsAsFactors = F)
+toSample
+
+existing_plots <- data.frame(plotID = plots_metrics$plotID, 
+                             x = plots_metrics_coords[,1], 
+                             y = plots_metrics_coords[,2], 
+                             strata = strata_plots)
+existing_plots
+
+
+new_plots <- RMFinventory ::sampleCells(strata_layer = strata_candidates,
+                         matrix_strata = strata$matrix, 
+                         existing_sample = existing_plots, # You can provide a set of exisitng plots or output of previous call to sampleCells and these cells won't be sampled again.
+                         toSample = toSample, 
+                         mindist = 150, 
+                         message = T)
+
+# There might be a warning like this: 
+#no non-missing arguments to min; returning Infno non-missing arguments to max; returning -Inf
+# If think safe to ignore but need to look more into that
+new_plots 
+
+new_plots <- st_as_sf(new_plots, coords = c("x", "y"))
+
+plot(strata_candidates)
+plot(st_geometry(new_plots), add = T)
+```
+
+```{r}
+new_plots_metrics <- extract(wall_metrics, new_plots)
+new_plots_PCA <- as.data.frame(predict(PCA_model, new_plots_metrics))[,c(1,2)]
+colnames(new_plots_PCA) <- c("PC1", "PC2")
+
+
+ggplot(mapping = aes(x = PC1, y = PC2)) + 
+  geom_polygon(data = hulls_wall, colour = "#440154FF", fill ="#440154FF", alpha = 0.2) +
+  geom_polygon(data = hulls_cand, colour = "orange", fill = NA) + 
+  geom_point(data = df_PCA_candidates, colour = "orange") + 
+  geom_point(data = new_plots_PCA) + 
+  geom_vline(xintercept = breaks$PC1, linetype = "dashed") + 
+  geom_hline(yintercept = breaks$PC2, linetype = "dashed") + 
+  theme_bw() +
+  coord_equal() +
+  theme(panel.grid = element_blank(),
+        legend.position = "right")
+```
+
+# Field inventory data
+
+## Forest attributes using allometric equations
+
+To be completed
+
+# Calculate plot-level ALS metrics
+
+Plot-level ALS metrics need to be calculated in order to build predictive models of forest attributes. These task can be performed in various softwares/packages. Here, we present two of them: LAStools and the lidR R package. 
+
+The lidR package offers more flexibility to calculate user-defined metrics. At the plot-level, computing time difference between lidR and LAStools is not significant. However, ALS metrics also need to be calculated wall-to-wall in order to generate forest attribute maps once predictive models have been developed on plot data. Over larger areas, LAStools will generally be more efficient than lidR. 
+
+In the end, the choice between lidR and LAStools is a trade-off between flexibility in ALS metrics and computational efficiency when calculating wall-to-wall maps. 
+
+## Using the lidR package
+
+The functionalities of the lidR package are well described in the following wiki: https://github.com/Jean-Romain/lidR/wiki. 
+
+The [Area-based approach from A to Z](https://github.com/Jean-Romain/lidR/wiki/Area-based-approach-from-A-to-Z) is a great resource to have a look at for ABA. 
+
+### Clip to plots extent 
+
+```{r, eval = FALSE}
+lastiles <- lidR::readLAScatalog("path/to/ALS tiles")
+
+plots <- st_read("path/to/plots_coordinates.shp")
+
+opt_output_files(lastiles) <- "path/to/output/plot_{PlotID}" # Here plotID is a field of plots_coordinates.shp
+
+plot_radius = 11.28
+plots_las <- lasclip(lastiles, plots, radius = plot_radius)
+```
+
+### Calculate plot_level metrics
+
+To be completed
+
+## Using lastools 
+
+To be completed
+
+### Clip to plots extent
+
+To be completed
+
+### Calculate plot-level metrics
+
+It is possible to execute operative system commands through R using the `system` function by passing it a character containing the command. 
+
+```{r, eval = FALSE}
+files <- "path/to/lasfiles"
+odir <- "path/to/output/file.csv"
+lastools_cmd <- paste0("lascanopy -i ", files, "*.las -files_are_plots -height_cutoff 1.3 -cover_cutoff 2 -p 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 99 -avg -cov -dns -std -kur -ske -d 2 5 10 15 20 25 -names -o ", odir)
+system(lastools_cmd)
+```
+# Make predictive models
+
+The `makeModels` function implemented in the package builds random forest predictive models for each forest attribute and assess their accuracy using a k-fold cross-validation. 
+
+```{r, eval = TRUE}
+# Open plot-level ALS metrics
+
+als_metrics <- read.csv(system.file("extdata","plot_metrics.csv", package = "RMFinventory"))
+head(als_metrics)
+
+toKeep <- colnames(als_metrics)[colnames(als_metrics) %in% names(wall_metrics)]
+
+als_metrics <- als_metrics[,c("plotID", toKeep)]
+
+pred_names <- colnames(als_metrics)[!colnames(als_metrics) %in% "plotID"]
+pred_names
+
+# Open plot-level forest attributes 
+
+plot_data <- read.csv(system.file("extdata","tblPlotLevelSummary.csv", package = "RMFinventory"))
+head(plot_data)
+
+# Combine field data and ALS metrics
+combine_dat <- merge(als_metrics, plot_data, by = "plotID")
+
+# Attributes to model
+attNames <- c("top_height", "ba_ha", "V_ha") 
+# Title to add to plots (optional)
+titles <- list(ba_ha =  expression("Basal area (m"^"2"*"/ha)"), 
+               top_height = "Top height (m)", 
+               V_ha = expression("Whole stem volume (m"^"3"*"/ha)"))
+
+# Run modeling: k-fold cross validation, random forest regression models and accuracy assessment
+rfList <- RMFinventory::makeModels(dat = combine_dat,
+                                   attNames = attNames,
+                                   preds = pred_names, 
+                                   k = 5, 
+                                   titles = titles,
+                                   saveModel = F,
+                                   saveFigure = F)
+rfList$accuracy$`all folds`
+rfList$accuracy$summary
+
+# The accuracy measures reported on the plot are currently not extracted from rfList$accuracy$summary as they should be. They are calculated based on all plotted points. 
+# The mean (and std) of accuracy measures of the cross-validation are better indicators of the "true" accuracy assessment. 
+rfList$top_height$plot
+rfList$ba_ha$plot
+rfList$V_ha$plot
+
+```
+
+# Calculate wall-to-wall ALS metrics 
+
+```{r}
+# Wall to wall metrics (already opened at the beginnign of the vignette)
+wall_metrics <- brick(system.file("extdata", "wall_metrics_small.tif", package = "RMFinventory"))
+names(wall_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
+```
+
+# Get maps of forest attributes
+
+```{r}
+top_height_wall <- raster::predict(wall_metrics, rfList$top_height$finalModel)
+ba_ha_wall <- raster::predict(wall_metrics, rfList$ba_ha$finalModel)
+V_ha_wall <- raster::predict(wall_metrics, rfList$V_ha$finalModel)
+
+plot(top_height_wall, main = titles$top_height)
+plot(ba_ha_wall, main = titles$ba_ha, zlim = c(0, 70))
+plot(V_ha_wall, main = titles$V_ha, zlim = c(0, 500))
+```

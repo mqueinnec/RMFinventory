@@ -1,0 +1,6 @@
+inst/doc
+.Rhistory
+.Rbuildignore
+RMFinventory.Rproj
+tests.R
+.Rproj.user

@@ -1,0 +1,130 @@
+SpeciesCode,SpeciesAbbrev,Genus,Species,Common,SpeciesType
+45,Ab,Fraxinus,nigra,Black Ash,Tree
+47,Ag,Fraxinus,pennsylvanica,Green Ash,Tree
+1091,Am,Sorbus,sp,Sorbus species,Small Tree
+901,Ap,Fraxinus,profunda,Pumpkin Ash,Tree
+132,Aq,Fraxinus,quadrangulata,Blue Ash,Tree
+46,Aw,Fraxinus,americana,White Ash,Tree
+111,Bb,Carpinus,caroliniana,American Hornbeam,Small Tree
+112,Bc,Betula,lenta,Cherry Birch,Tree
+51,Bd,Tilia,americana,American Basswood,Tree
+44,Be,Fagus,grandifolia,American Beech,Tree
+20,Bf,Abies,balsamea,Balsam Fir,Tree
+168,Bg,Betula,populifolia,Gray Birch,Small Tree
+166,Bl,Tilia,platyphyllos,Big-leaf Linden,Tree
+55,Bn,Juglans,cinerea,Butternut,Tree
+120,Bp,Betula,pendula,European Weeping Birch,Tree
+38,Bw,Betula,papyrifera,Paper Birch,Tree
+37,By,Betula,alleghaniensis,Yellow Birch,Tree
+77,Cat,Catalpa,speciosa,Northern Catalpa,Tree
+58,Cb,Prunus,serotina,Black Cherry,Tree
+171,Cd,Castanea,dentata,American Chestnut,Tree
+1062,Ch,Prunus,sp,Prunus species,Small Tree
+90,Cm,Prunus,avium,Sweet Cherry,Tree
+139,Cp,Prunus,pensylvanica,Pin Cherry,Small Tree
+23,Cr,Juniperus,virginiana,Eastern Red Cedar,Tree
+174,Cs,Prunus,cerasus,Sour Red Cherry,Tree
+136,Ct,Magnolia,acuminata,Cucumber Tree,Tree
+22,Cw,Thuja,occidentalis,Eastern White Cedar,Tree
+146,Ema,Sorbus,aucuparia,European Mountain-ash,Tree
+169,Er,Ulmus,rubra,Slippery Elm,Tree
+170,Eu,Ulmus,thomasii,Rock Elm,Tree
+50,Ew,Ulmus,americana,American Elm,Tree
+137,Gb,Nyssa,sylvatica,Black Gum,Tree
+96,Gt,Gleditsia,triacanthos,Honey Locust,Tree
+82,Haz,Hamamelis,virginiana,American Witch-hazel,Small Tree
+123,Hb,Carya,cordiformis,Bitternut Hickory,Tree
+69,Hc,Aesculus,hippocastanum,Horse Chestnut,Tree
+19,He,Tsuga,canadensis,Eastern Hemlock,Tree
+68,Hk,Celtis,occidentalis,Common Hackberry,Tree
+93,Hl,Carya,laciniosa,Big Shellbark Hickory,Tree
+89,Hp,Carya,glabra,Sweet Pignut Hickory,Tree
+124,Hs,Carya,ovata,Shagbark Hickory,Tree
+128,Ht,Crataegus,sp,Hawthorn species,Small Tree
+56,Iw,Ostrya,virginiana,Ironwood,Tree
+133,Kk,Gymnocladus,dioicus,Kentucky Coffee-tree,Tree
+25,La,Larix,laricina,American Larch,Tree
+61,Lb,Robinia,pseudo-acacia,Black Locust,Tree
+26,Le,Larix,decidua,European Larch,Tree
+27,Lj,Larix,leptolepis,Japanese Larch,Tree
+150,Ll,Tilia,cordata,Little-leaf Linden,Tree
+94,Mb,Acer,saccharum ssp. nigrum,Black Maple,Tree
+177,Mf,Acer,x freemanii,Freeman's Maple,Tree
+30,Mh,Acer,saccharum,Sugar Maple,Tree
+117,Mm,Acer,negundo,Manitoba Maple,Small Tree
+34,Mn,Acer,platanoides,Norway Maple,Tree
+175,Mo,Morus,rubra,Red Mulberry,Tree
+1001,Mp,Acer,pensylvanicum,Striped Maple,Small Tree
+32,Mr,Acer,rubrum,Red Maple,Tree
+33,Ms,Acer,saccharinum,Silver Maple,Tree
+42,Ob,Quercus,macrocarpa,Bur Oak,Tree
+86,Obl,Quercus,velutina,Black Oak,Tree
+91,Och,Quercus,muehlenbergii,Chinquapin Oak,Tree
+87,Op,Quercus,palustris,Pin Oak,Tree
+41,Or,Quercus,rubra,Northern Red Oak,Tree
+39,Os,Quercus,shumardii,Shumard's Oak,Tree
+88,Osw,Quercus,bicolor,Swamp White Oak,Tree
+40,Ow,Quercus,alba,White Oak,Tree
+1193,OX,Quercus,sp,Quercus species,Tree
+119,Pa,Asimina,triloba,Pawpaw,Tree
+73,Pb,Populus,balsamifera,Balsam Poplar,Tree
+72,Pc,Populus,x canadensis,Carolina Poplar,Tree
+71,Pd,Populus,deltoides,Eastern Cottonwood,Tree
+76,Pe,Populus,alba,White Poplar,Tree
+97,Ph,Populus,X,Hybrid Poplar,Tree
+3,Pj,Pinus,banksiana,Jack Pine,Tree
+70,Pl,Populus,grandidentata,Large-tooth Aspen,Tree
+6,Pn,Pinus,nigra,Austrian Pine,Tree
+75,Po,Populus,sp,Populus species,Tree
+5,Pp,Pinus,rigida,Pitch Pine,Tree
+2,Pr,Pinus,resinosa,Red Pine,Tree
+4,Ps,Pinus,sylvestris,Scotch Pine,Tree
+74,Pt,Populus,tremuloides,Trembling Aspen,Tree
+1,Pw,Pinus,strobus,Eastern White Pine,Tree
+125,Red,Cercis,canadensis,Redbud,Small Tree
+13,Sb,Picea,mariana,Black Spruce,Tree
+15,Sn,Picea,abies,Norway Spruce,Tree
+14,Sr,Picea,rubens,Red Spruce,Tree
+78,Ss,Sassafras,albidum,Sassafras,Tree
+12,Sw,Picea,glauca,White Spruce,Tree
+57,Sy,Platanus,occidentalis,Sycamore,Tree
+60,Tp,Liriodendron,tulipifera,Tulip Tree,Tree
+54,Wb,Juglans,nigra,Black Walnut,Tree
+173,,Rhamnus,frangula,Glossy Buckthorn,Small Tree
+903,,Salix,sp (tree),Salix tree species,Small Tree
+1005,,Amelanchier,sp,Amelanchier species,Small Tree
+1032,,Crataegus,chrysocarpa,Fineberry Hawthorn,Small Tree
+1033,,Crataegus,succulenta,Fleshy Hawthorn,Small Tree
+1092,,Sorbus,americana,American Mountain-ash,Small Tree
+1093,,Sorbus,decora,Northern Mountain-ash,Small Tree
+1151,,Crataegus,crus-galli,Cockspur Hawthorn,Small Tree
+1152,,Crataegus,douglasii,Douglas's Hawthorn,Small Tree
+1153,,Crataegus,flabellata,Bosc's Thorn,Small Tree
+1154,,Crataegus,macrosperma,Variable Thorn,Small Tree
+1155,,Crataegus,monogyna,English Hawthorn,Small Tree
+1156,,Crataegus,punctata,Dotted Hawthorn,Small Tree
+1180,,Malus,sp,Malus species,Small Tree
+1194,,Quercus,prinoides,Dwarf Chinquapin Oak,Small Tree
+1195,,Rhamnus,sp,Rhamnus species,Small Tree
+1196,,Rhamnus,cathartica,Buckthorn,Small Tree
+0,,Unknown,Unknown,Unknown Tree Species,Tree
+63,,Salix,alba,White Willow,Tree
+64,,Salix,babylonica,Weeping Willow,Tree
+92,,Carya,tomentosa,Mockernut hickory,Tree
+109,,Thuja,plicata,Western Red Cedar,Tree
+121,,Betula,pubescens,Downy Birch,Tree
+134,,Liquidambar,styraciflua,Sweet gum,Tree
+141,,Ptelea,trifoliata,Hop Tree,Tree
+145,,Sorbus,aria,Whitebeam,Tree
+172,,Castanea,sativa,Sweet Chestnut,Tree
+902,,Malus,pumila,Common Apple,Tree
+904,,Salix,atrocinerea,Rusty Sallow,Tree
+905,,Salix,fragilis,Crack Willow,Tree
+906,,Salix,lutea,Yellow Willow,Tree
+907,,Salix,pentandra,Bay-leaved Willow,Tree
+990,,Unknown Conifer,Unknown,Unknown Conifer,Tree
+991,,Unknown Hardwood,Unknown,Unknown Hardwood,Tree
+1217,,Salix,amygdaloides,Peach-leaved Willow,Tree
+1231,,Salix,maccalliana,Mccall's Willow,Tree
+1234,,Salix,nigra,Black Willow,Tree
+1246,,Salix,viminalis,A Willow,Tree
