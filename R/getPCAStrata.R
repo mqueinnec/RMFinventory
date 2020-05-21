@@ -81,6 +81,8 @@ getPCAstrata <- function(PCA_layer,
   names(strata) <- names(breaks)
   strata <- strata[features_names] # Make sure that list is ordered
 
+  PCA_strata <- strata
+
   strata <- do.call(paste0,strata)
 
   strata <- factor(strata, levels = all_strata, ordered = T)
@@ -107,10 +109,12 @@ getPCAstrata <- function(PCA_layer,
 
   if(summary) {
     out <- list(strata_layer = PCA_layer$strata,
+                PCA_strata = PCA_strata,
                 breaks = breaks,
                 summary = PCA_layer_summary)
   }else{
     out <- list(strata_layer = PCA_layer$strata,
+                PCA_strata = PCA_strata,
                 breaks = breaks)
   }
   out$matrix <- makeStrataMatrix(nbreaks)
