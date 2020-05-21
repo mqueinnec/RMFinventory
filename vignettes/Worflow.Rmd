@@ -32,6 +32,91 @@ library(RStoolbox)
 library(ggplot2)
 ```
 
+# Select candidate cells from inventory layers
+
+For this section we assume that wall-to-wall lidar metrics are available:
+
+```{r}
+wall_metrics <- brick(system.file("extdata","wall_metrics_small.tif", package = "RMFinventory"))
+names(wall_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
+
+plot(wall_metrics$avg)
+
+#Coordinate system of wall-to-wal raster
+wall_crs <- raster::crs(wall_metrics)
+```
+
+We will only select cells that are suitable for plot establishment using the followqign process:
+
+1. Open a shapefile that contains the areas to keep/mask as a sf object
+2. Perform some operations such as querying some attributes or create buffers
+3. Convert the sf object as a sp object for cpompatibility with the raster package
+4. USe the mask function of the raster package that will assign NA values to all cells not covered (i.e. centroid not inside polygon) by the sp object. 
+
+## PCI/BMI polygons
+
+```{r}
+poly <- st_read(system.file("extdata/inventory_polygons","inventory_polygons.shp", package = "RMFinventory"))
+
+#Match CRS of wall-to-wall raster layer
+poly <- st_transform(poly, wall_crs@projargs)
+plot(poly["POLYTYPE"], axes = TRUE)
+plot(poly["OWNER"], axes = TRUE)
+
+poly_subset <- poly[poly$POLYTYPE == "FOR" & poly$OWNER == 1, ]
+plot(st_geometry(poly_subset), axes = TRUE, col = "red")
+
+poly_subset <- st_union(poly_subset)
+plot(st_geometry(poly_subset), axes = TRUE, col = "red")
+
+#Transform to SpatialPolygonDataFrame object for compatibility with the raster package
+poly_subset <- sf::as_Spatial(poly_subset)
+
+#Mask wall-to-wall layer
+wall_poly <- raster::mask(wall_metrics, mask = poly_subset)
+plot(wall_poly$avg)
+```
+
+## Road layer
+
+```{r}
+# Open roads layer, select suitable road types and create a buffer 
+
+roads <- st_read(system.file("extdata/roads","roads.shp", package = "RMFinventory"))
+roads <- st_transform(roads, wall_crs@projargs)
+plot(roads["RDTYPE"])
+
+# Select only suitable road types
+# Highway (H), Municipal (M), Primary (P), Branch (B), Clay/mineral surface haul (C) and roads accessed when dry or frozen (d) , graveled (g), industrial grade road (i), highway or municipal road(r), yearly accessible (y)
+
+roads_subset <- roads[roads$RDTYPE %in% c("H", "M", "P", "B", "C") &
+                        roads$RDMOD %in% c("d", "g", "i", "r", "y"), ]
+
+# Dissolve roads layer to work with only 1 feature
+roads_subset <- st_union(roads_subset)
+plot(st_geometry(roads_subset))
+
+#Create buffers of 30 m and 200 m
+roads_buffer_30m <- st_buffer(roads_subset, dist = 30)
+roads_buffer_200m <- st_buffer(roads_subset, dist = 200)
+
+#Take the symetrical difference between buffers to keep only roads >- 30 m AND <= 200 m
+roads_buffer <- st_sym_difference(roads_buffer_200m, roads_buffer_30m)
+plot(st_geometry(roads_buffer))
+
+#Transform to SpatialPolygonDataFrame object for compatibility with the raster package
+roads_buffer <- sf::as_Spatial(roads_buffer)
+
+#Mask wall-to-wall layer
+wall_poly_roads <- raster::mask(wall_poly, mask = roads_buffer)
+plot(wall_poly_roads$avg)
+
+```
+
+## Additional masking layers
+
+In this example we only mask by inventory polygons and distance to road but other layers can be considered (such as past or planned depletions). The same approach as the one described above can be used. 
+
 # Stratified random sampling of cells for new plots establishement
 
 When generating forest inventory attributes using an area-based-approach (ABA), the ground plots data used to calibrate ABA regression models need to be representative as much as possible of the full range of forest structure variability within the study area. If this is not the case, regression models might perform poorly in underrepresented forest types (White et al., 2013). Lidar metrics such as height percentiles, cover or height variability can be used to design a sampling network driven by forest structure.
@@ -47,14 +132,10 @@ Note that the resolution of the lidar metrics maps is determined based on the si
 In the example of RMF, we selected only cells located between 30 m and 200 m from roads and forest inventory polygons determined from photo interpretation, were used to select only cells considered to be forested. 
 
 ```{r open candidate cells}
-# Open raster of wall to wall metrics
-wall_metrics <- brick(system.file("extdata","wall_metrics_small.tif", package = "RMFinventory"))
-names(wall_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
-
 # Plot wall-to-wall
 plot(wall_metrics$p95, zlim = c(0, 30), main = "Wall to wall")
 
-candidate_metrics <- brick(system.file("extdata","candidate_metrics_small.tif", package = "RMFinventory"))
+candidate_metrics <- wall_poly_roads #From previous processing
 names(candidate_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
 
 
@@ -65,7 +146,16 @@ plot(candidate_metrics$p95, zlim = c(0, 30), main = "Candidates")
 We calculate PCA values from the lidar metrics located in forested cells using the `rasterPCA` function from the `RStoolbox` package.
 
 ```{r Get PCA model}
-PCA <- RStoolbox::rasterPCA(wall_metrics, nComp = 2, spca = TRUE, maskCheck = FALSE)
+poly <- st_read("E:/ROMEO/RMF_Pilot_Data/Scripts/RMFinventory/inst/extdata/inventory_polygons/inventory_polygons.shp")
+
+#Match CRS of wall-to-wall raster layer
+poly <- st_transform(poly, wall_crs@projargs)
+
+#Select FOR polygons and transform to sp
+poly_FOR <- poly[poly$POLYTYPE == "FOR", ]
+wall_metrics_FOR <- mask(wall_metrics, poly_FOR)
+
+PCA <- RStoolbox::rasterPCA(wall_metrics_FOR, nComp = 2, spca = TRUE, maskCheck = FALSE)
 # nComp = 2, we return the two first principal components
 # spca = TRUE, since metrics have different ranges of values the fucntion will center and scale the metrics
 # maskCheck = FALSE, we don't check if some pixels have NA value in one or more layers. If not sure, set to TRUE
