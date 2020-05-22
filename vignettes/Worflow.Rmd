@@ -207,13 +207,22 @@ PCA_candidates <- raster::predict(candidate_metrics, model = PCA_model, index = 
 ```{r, include = FALSE}
 PCA_candidates <- raster::predict(object = candidate_metrics, model = PCA_model,index = c(1,2))
 names(PCA_candidates) <- c("PC1", "PC2")
+
+#Also possible to mask wall to wall PCA using a candidate metrics layer
+#PCA_candidates <- raster::mask(PCA_wall, candidate_metrics$avg)
 ```
 
 Once PCA values of all forested cells, candidate cells and existing plots have been calculated, it is useful to plot them to visualize their distribution.
 
 ```{r}
+# In the following steps we get raster cells values in a data.frame
+# With large raster object it can creates very large objects in memory
 df_PCA_wall <- as.data.frame(PCA_wall, na.rm = TRUE, xy = FALSE)
 df_PCA_candidates <- as.data.frame(PCA_candidates, na.rm = TRUE, xy = FALSE)
+
+#Calculate poitn density for scatterplot visualization
+df_PCA_candidates <- df_PCA_candidates %>%
+  mutate(dens = get_density(PC1, PC2, n = 300))
 
 # Get convex hulls 
 
@@ -226,12 +235,23 @@ hulls_cand <- dplyr::slice(df_PCA_candidates[,c("PC1","PC2")],hulls_cand_idx)
 ggplot(mapping = aes(x = PC1, y = PC2)) + 
   geom_polygon(data = hulls_wall, colour = "#440154FF", fill ="#440154FF", alpha = 0.2) +
   geom_polygon(data = hulls_cand, colour = "orange", fill = NA) + 
-  geom_point(data = df_PCA_candidates, colour = "orange") + 
+  geom_point(data = df_PCA_candidates, aes(color = dens)) + 
+  scale_color_viridis_c() + 
   geom_point(data = plots_PCA) + 
   theme_bw() +
   coord_equal() +
   theme(panel.grid = element_blank(),
         legend.position = "right")
+
+
+#Function to calculate point density in scatterplot
+get_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
 
 ```
 
@@ -282,8 +302,9 @@ Make a new plots with break lines between strata
 ggplot(mapping = aes(x = PC1, y = PC2)) + 
   geom_polygon(data = hulls_wall, colour = "#440154FF", fill ="#440154FF", alpha = 0.2) +
   geom_polygon(data = hulls_cand, colour = "orange", fill = NA) + 
-  geom_point(data = df_PCA_candidates, colour = "orange") + 
-  geom_point(data = plots_PCA) + 
+  geom_point(data = df_PCA_candidates, aes(color = dens)) + 
+  scale_color_viridis_c() + 
+  geom_point(data = plots_PCA, color = "red") + 
   geom_vline(xintercept = breaks$PC1, linetype = "dashed") + 
   geom_hline(yintercept = breaks$PC2, linetype = "dashed") + 
   theme_bw() +
@@ -325,14 +346,20 @@ new_plots <- RMFinventory ::sampleCells(strata_layer = strata_candidates,
 # If think safe to ignore but need to look more into that
 new_plots 
 
-new_plots <- st_as_sf(new_plots, coords = c("x", "y"))
+#Assign plotID to sampled plots
+new_plots <- new_plots %>%
+  mutate(plotID = ifelse(type == "New", paste0("S_", seq_len(n())), plotID))
+
+#Convert to sf object
+new_plots_sf <- st_as_sf(new_plots, coords = c("x", "y"))
 
 plot(strata_candidates)
-plot(st_geometry(new_plots), add = T)
+plot(st_geometry(new_plots_sf), add = T)
 ```
 
 ```{r}
-new_plots_metrics <- extract(wall_metrics, new_plots)
+#Get metrics and PCA of new plots
+new_plots_metrics <- extract(wall_metrics, new_plots_sf) #could also get from point cloud directly
 new_plots_PCA <- as.data.frame(predict(PCA_model, new_plots_metrics))[,c(1,2)]
 colnames(new_plots_PCA) <- c("PC1", "PC2")
 
@@ -340,8 +367,9 @@ colnames(new_plots_PCA) <- c("PC1", "PC2")
 ggplot(mapping = aes(x = PC1, y = PC2)) + 
   geom_polygon(data = hulls_wall, colour = "#440154FF", fill ="#440154FF", alpha = 0.2) +
   geom_polygon(data = hulls_cand, colour = "orange", fill = NA) + 
-  geom_point(data = df_PCA_candidates, colour = "orange") + 
-  geom_point(data = new_plots_PCA) + 
+  geom_point(data = df_PCA_candidates, aes(color = dens)) + 
+  scale_color_viridis_c() + 
+  geom_point(data = new_plots_PCA, color = "red") + 
   geom_vline(xintercept = breaks$PC1, linetype = "dashed") + 
   geom_hline(yintercept = breaks$PC2, linetype = "dashed") + 
   theme_bw() +
