@@ -2,6 +2,7 @@
 #'
 #' @param x Raster object
 #' @param covMat Matrix of covariance with rownames and colnames correspondign to raster layer names
+#' @param xmeans Mean of each layer of x, as a named numeric vector
 #' @param threads Number of parallel threads
 #' @param ... Additional arguments passed to writeRaster
 #'
