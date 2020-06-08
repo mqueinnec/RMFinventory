@@ -57,14 +57,13 @@ sampleCells <- function(strata_layer,
   if(!is(toSample, "data.frame")) {
     stop("toSample must be a data.frame")
   }else if (NCOL(toSample) < 2){
-    stop("toSample must have at least two columns: strata and nuymber of cells to sample")
+    stop("toSample must have at least two columns: strata and number of cells to sample")
   }
 
   # Check that all strata to sample correspond to a valid PCA_layer strata
+  unique_strata_toSample <- unique(toSample[,1])
   if (checkStrata) {
-    unique_strata_toSample <- unique(toSample[,1])
     unique_strata_layer <- raster::unique(strata_layer)
-
     if(!all(unique_strata_toSample %in% unique_strata_layer)) {
       stop("Not all strata to sample correspond to a strata in PCA_layer")
     }
@@ -76,7 +75,7 @@ sampleCells <- function(strata_layer,
     s <- toSample[i, 1] #strata
     need <- toSample[i,2] #number of cells to sample
 
-    if (message) message(sprintf("Strata %s: %d cells to sample",s,need))
+    if (message) message(sprintf("Strata %s (%d/%d): %d cells to sample",s,i,length(unique_strata_toSample), need))
 
     if(need > 0) {
       # Mask all cells that are not strata
@@ -102,6 +101,8 @@ sampleCells <- function(strata_layer,
         }
       }
       nCount <- 0 #Number of sampled cells
+
+      if (message) message("Selecting in clusters ...")
 
       # While loop for RULE 1
       while(!all(values_strata_cluster) & nCount < need) {
