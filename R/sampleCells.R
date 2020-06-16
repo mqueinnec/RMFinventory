@@ -91,6 +91,8 @@ sampleCells <- function(strata_layer,
       names(group_s_cluster) <- "strata"
 
       values_strata_cluster <- is.na(getValues(group_s_cluster))
+      group_s_cluster_cells <- 1:ncell(group_s_cluster)
+      validCells_s_cluster <- group_s_cluster_cells[!values_strata_cluster]
 
       #Initiate number of sampled cells
       add_strata <- dplyr::filter(addSamples, strata == s)
@@ -105,9 +107,16 @@ sampleCells <- function(strata_layer,
       if (message) message("Selecting in clusters ...")
 
       # While loop for RULE 1
-      while(!all(values_strata_cluster) & nCount < need) {
+      while(length(validCells_s_cluster) > 0 & nCount < need) {
         # Temporary sampled cells
-        add_temp <- as.data.frame(raster::sampleRandom(group_s_cluster,1,cells=T,xy=T,sp=F))
+        smp <- sample(1:length(validCells_s_cluster), size = 1)
+        smp_cell <- validCells_s_cluster[smp]
+        add_temp <- data.frame(cell = smp_cell,
+                               x = raster::xFromCell(group_s_cluster, smp_cell),
+                               y = raster::yFromCell(group_s_cluster, smp_cell),
+                               strata = group_s_cluster[smp_cell])
+        validCells_s_cluster <- validCells_s_cluster[-smp]
+        #add_temp <- as.data.frame(raster::sampleRandom(group_s_cluster,1,cells=T,xy=T,sp=F))
         add_temp$type <- "New"
         add_temp$cluster <- "cluster"
         add_temp[,extraCols] <- NA
@@ -125,7 +134,7 @@ sampleCells <- function(strata_layer,
             group_s_cluster[add_temp$cell] <- NA
           }
         }
-        values_strata_cluster <- is.na(getValues(group_s_cluster))
+        #values_strata_cluster <- is.na(getValues(group_s_cluster))
       }
 
       # OUT OF RULE 1
@@ -148,12 +157,22 @@ sampleCells <- function(strata_layer,
         names(group_s_ext_cluster) <- "strata"
 
         values_strata_ext <- is.na(getValues(group_s_ext_cluster))
+        group_s_ext_cluster_cells <- 1:ncell(group_s_ext_cluster)
+        validCells_s_ext_cluster <- group_s_ext_cluster_cells[!values_strata_ext]
 
         # While loop for RULE 2
 
-        while(!all(values_strata_ext) & nCount < need){
+        while(length(validCells_s_ext_cluster) > 0 & nCount < need){
 
-          add_temp <- as.data.frame(raster::sampleRandom(group_s_ext_cluster,1,cells=T,xy=T,sp=F))
+          smp <- sample(1:length(validCells_s_ext_cluster), size = 1)
+          smp_cell <- validCells_s_ext_cluster[smp]
+          add_temp <- data.frame(cell = smp_cell,
+                                 x = raster::xFromCell(group_s_ext_cluster, smp_cell),
+                                 y = raster::yFromCell(group_s_ext_cluster, smp_cell),
+                                 strata = group_s_ext_cluster[smp_cell])
+          validCells_s_ext_cluster <- validCells_s_ext_cluster[-smp]
+
+          #add_temp <- as.data.frame(raster::sampleRandom(group_s_ext_cluster,1,cells=T,xy=T,sp=F))
           add_temp$cluster <- "cluster extended"
           add_temp$type <- "New"
           add_temp[,extraCols] <- NA
@@ -172,19 +191,30 @@ sampleCells <- function(strata_layer,
             }
 
           }
-          values_strata_ext <- is.na(getValues(group_s_ext_cluster))
+          #values_strata_ext <- is.na(getValues(group_s_ext_cluster))
         }
       }
 
       if (nCount < need) {
 
         val_strata <- is.na(raster::getValues(group_s))
+        group_s_cells <- 1:ncell(group_s)
+        validCells_s <- group_s_cells[!val_strata]
         #We still don't have enough samples, select isolated
 
         if (message) message("Selecting isolated cells ...")
 
-        while(!all(val_strata) & nCount < need){
-          add_temp <- as.data.frame(raster::sampleRandom(group_s,1,cells=T, xy=T, sp=F))
+        while(length(validCells_s) > 0 & nCount < need){
+
+          smp <- sample(1:length(validCells_s), size = 1)
+          smp_cell <- validCells_s[smp]
+          add_temp <- data.frame(cell = smp_cell,
+                                 x = raster::xFromCell(group_s, smp_cell),
+                                 y = raster::yFromCell(group_s, smp_cell),
+                                 strata = group_s[smp_cell])
+          validCells_s <- validCells_s[-smp]
+
+          #add_temp <- as.data.frame(raster::sampleRandom(group_s,1,cells=T, xy=T, sp=F))
           add_temp$cluster <- "isolated"
           add_temp$type <- "New"
           add_temp[,extraCols] <- NA
@@ -202,7 +232,7 @@ sampleCells <- function(strata_layer,
               group_s[add_temp$cell] <- NA
             }
           }
-          val_strata <- is.na(getValues(group_s))
+          #val_strata <- is.na(getValues(group_s))
         }
       }
 
