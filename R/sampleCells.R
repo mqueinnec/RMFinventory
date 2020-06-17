@@ -154,6 +154,7 @@ sampleCells <- function(strata_layer,
 
         # Select only cells in extended cluster
         suppressWarnings(group_s_ext_cluster <- raster::focal(group_s_ext, w = w, na.rm = FALSE, pad = FALSE))
+        suppressWarnings(group_s_ext_cluster <- raster::mask(group_s_ext_cluster,group_s))
         names(group_s_ext_cluster) <- "strata"
 
         values_strata_ext <- is.na(getValues(group_s_ext_cluster))
