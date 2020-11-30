@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 This vignette presents the sampling and ABA modeling approaches that were used for the enhanced forest inventory (EFI) pilot project at Romeo Malette Forest (RMF) using Leica SPL100 lidar (SPL) data collected wall-to-wall during the summer of 2018. The package (and this vignette) are written for the RMNF project but the intent is to make the overall approach applicable to other forest management units.
 
-First, we will perform a structurally-guided stratified sampling to select locations for new plots establishement. Then, we will detail how plot-level forest attribute data can be calculated or modeled from published allometric equations. Finally, we will use the field inventory data and the SPL point cloud to build random forest predicitve models and generate wall-to-wall maps of forest attributes. 
+First, we will perform a structurally-guided stratified sampling to select locations for new plots establishment. Then, we will detail how plot-level forest attribute data can be calculated or modeled from published allometric equations. Finally, we will use the field inventory data and the SPL point cloud to build random forest predictive models and generate wall-to-wall maps of forest attributes. 
 
 We start by loading the packages that we are going to use
 
@@ -37,6 +37,10 @@ library(ggplot2)
 For this section we assume that wall-to-wall lidar metrics are available:
 
 ```{r}
+input <- "G:/ROMEO/SPL_processing/2_Metrics/2_mosaic"
+flist <- list.files(input, pattern = "tif$", full.names = TRUE)
+test <- stack(flist)
+
 wall_metrics <- brick(system.file("extdata","wall_metrics_small.tif", package = "RMFinventory"))
 names(wall_metrics) <- c("avg", "cov", "std","p10", "p20","p50","p70","p95", "p99","d0","d2","d4","dns")
 
@@ -220,7 +224,16 @@ Once PCA values of all forested cells, candidate cells and existing plots have b
 df_PCA_wall <- as.data.frame(PCA_wall, na.rm = TRUE, xy = FALSE)
 df_PCA_candidates <- as.data.frame(PCA_candidates, na.rm = TRUE, xy = FALSE)
 
-#Calculate poitn density for scatterplot visualization
+## Function to calculate point density in scatterplot
+get_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
+
+#Calculate point density for scatterplot visualization
 df_PCA_candidates <- df_PCA_candidates %>%
   mutate(dens = get_density(PC1, PC2, n = 300))
 
@@ -315,7 +328,7 @@ ggplot(mapping = aes(x = PC1, y = PC2)) +
 
 ## Select new plots
 
-The function `sampleCells` that performs the sampling requires the number of cells to sample for each strata. This can be determined based on the previous feature space plots, total number of plots than can be selected, number of exisiting plots, how many of them should be re-measured etc. 
+The function `sampleCells` that performs the sampling requires the number of cells to sample for each strata. This can be determined based on the previous feature space plots, total number of plots than can be selected, number of existing plots, how many of them should be re-measured etc. 
 
 The following figure illustrates the sampling process: 
 
@@ -336,7 +349,7 @@ existing_plots
 
 new_plots <- RMFinventory ::sampleCells(strata_layer = strata_candidates,
                          matrix_strata = strata$matrix, 
-                         existing_sample = existing_plots, # You can provide a set of exisitng plots or output of previous call to sampleCells and these cells won't be sampled again.
+                         existing_sample = existing_plots, # You can provide a set of existing plots or output of previous call to sampleCells and these cells won't be sampled again.
                          toSample = toSample, 
                          mindist = 150, 
                          message = T)
