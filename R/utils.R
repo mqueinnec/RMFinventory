@@ -116,20 +116,6 @@ calc_error_internal <- function(dfs, dist.normal = dist.normal, short = short) {
   return(c(cor_coeff,count_int, bias_int, bias_perc_int, RMSE_int,RMSE_perc_int, stat,p_val))
 }
 
-#' print n random rows of a data frame
-#'
-#' @param df a data frame.
-#' @param n number of rows to print. Default = 5
-#' @return \code{n} random rows of \code{df}.
-#' @examples
-#' mid(iris)
-#' mid(iris, 10)
-#' @export
-
-mid <- function(df,n=5) {
-  return(df[sample(nrow(df),n),])
-}
-
 
 #' round a number to nearest given integer
 #'
