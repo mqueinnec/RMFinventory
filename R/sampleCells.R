@@ -43,6 +43,7 @@ sampleCells <- function(strata_layer,
     addSamples <- existing_sample
     extraCols <- colnames(existing_sample)[!colnames(existing_sample) %in% c("x", "y", "strata")]
 
+    # Transform strata to numeric if factor
     if(is(addSamples$strata, "factor")) {
       addSamples$strata <- as.numeric(as.character(addSamples$strata))
     }
@@ -115,26 +116,24 @@ sampleCells <- function(strata_layer,
                                x = raster::xFromCell(group_s_cluster, smp_cell),
                                y = raster::yFromCell(group_s_cluster, smp_cell),
                                strata = group_s_cluster[smp_cell])
+
+        # Remove sampled cell from validCells so that it cannot be sampled again later
         validCells_s_cluster <- validCells_s_cluster[-smp]
-        #add_temp <- as.data.frame(raster::sampleRandom(group_s_cluster,1,cells=T,xy=T,sp=F))
+
         add_temp$type <- "New"
         add_temp$cluster <- "cluster"
         add_temp[,extraCols] <- NA
+        # If add_strata is empty, sampled cell accepted
         if (NROW(add_strata) == 0) {
           add_strata <- add_temp[,c("x","y","strata","cluster","type",extraCols)]
-          group_s_cluster[add_temp$cell] <- NA
           nCount = nCount +1
-        }else{
+        }else{ # Else, check distance with all other sampled cells in strata
           dist <- spatstat::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
-          if(all(as.numeric(dist)>mindist)){
+          if(all(as.numeric(dist)>mindist)){ # Is all less than mindist, accept sampled cell otherwise reject
             add_strata <- rbind(add_strata, add_temp[,c("x","y","strata","cluster","type",extraCols)])
-            group_s_cluster[add_temp$cell] <- NA
             nCount = nCount + 1
-          }else{
-            group_s_cluster[add_temp$cell] <- NA
           }
         }
-        #values_strata_cluster <- is.na(getValues(group_s_cluster))
       }
 
       # OUT OF RULE 1
@@ -173,26 +172,19 @@ sampleCells <- function(strata_layer,
                                  strata = group_s_ext_cluster[smp_cell])
           validCells_s_ext_cluster <- validCells_s_ext_cluster[-smp]
 
-          #add_temp <- as.data.frame(raster::sampleRandom(group_s_ext_cluster,1,cells=T,xy=T,sp=F))
           add_temp$cluster <- "cluster extended"
           add_temp$type <- "New"
           add_temp[,extraCols] <- NA
           if (NROW(add_strata) == 0) {
             add_strata <- add_temp[,c("x","y","strata","cluster","type",extraCols)]
-            group_s_ext_cluster[add_temp$cell] <- NA
             nCount = nCount +1
           }else{
             dist <- spatstat::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
             if(all(as.numeric(dist)>mindist)){
               add_strata <- rbind(add_strata, add_temp[,c("x","y","strata","cluster","type",extraCols)])
-              group_s_ext_cluster[add_temp$cell] <- NA
               nCount = nCount +1
-            }else{
-              group_s_ext_cluster[add_temp$cell] <- NA
             }
-
           }
-          #values_strata_ext <- is.na(getValues(group_s_ext_cluster))
         }
       }
 
@@ -215,43 +207,43 @@ sampleCells <- function(strata_layer,
                                  strata = group_s[smp_cell])
           validCells_s <- validCells_s[-smp]
 
-          #add_temp <- as.data.frame(raster::sampleRandom(group_s,1,cells=T, xy=T, sp=F))
           add_temp$cluster <- "isolated"
           add_temp$type <- "New"
           add_temp[,extraCols] <- NA
           if (NROW(add_strata) == 0) {
             add_strata <- add_temp[,c("x","y","strata","cluster","type",extraCols)]
-            group_s[add_temp$cell] <- NA
             nCount = nCount +1
           }else{
             dist <- spatstat::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
             if(all(as.numeric(dist)>mindist)){
               add_strata <- rbind(add_strata, add_temp[,c("x","y","strata","cluster","type",extraCols)])
-              group_s[add_temp$cell] <- NA
               nCount = nCount +1
-            }else{
-              group_s[add_temp$cell] <- NA
             }
           }
-          #val_strata <- is.na(getValues(group_s))
         }
       }
 
       # SAMPLING FINISHED
 
       if (nCount < need){
-        warning(sprintf("Strata %s: couldn't select required number of samples: %i instead of %i",s,nCount, need))
+        warning(sprintf("Strata %s: couldn't select required number of samples: %i instead of %i \n",s,nCount, need))
       }
 
-      #Make sure that correct strat number is assigned and only correct columns are selected
-      add_strata$strata <- s
-      add_strata <- add_strata[,c("x","y","strata","cluster","type",extraCols)]
+
+      # If there are sampled cells in strata then add them to the ouput
+      if (nrow(add_strata) > 0) {
+        #Make sure that correct strata number is assigned and only correct columns are selected
+        add_strata$strata <- s
+        add_strata <- add_strata[,c("x","y","strata","cluster","type",extraCols)]
 
 
-      if (i == 1) {
-        out <- add_strata
-      }else{
-        out <- rbind(out,add_strata)
+        # Create out object if first iteration of loop
+        # Else just rbind output with what has been processed in the loop
+        if (i == 1) {
+          out <- add_strata
+        }else{
+          out <- rbind(out,add_strata)
+        }
       }
     }
   }
