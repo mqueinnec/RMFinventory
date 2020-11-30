@@ -4,8 +4,7 @@
 \alias{varImpRank}
 \title{Get random forest importance values and rank variables per order of importance}
 \usage{
-varImpRank(rfList, measure = "IncMSE", nrank = 5, saveFigure = FALSE,
-  outdir)
+varImpRank(rfList, measure = "IncMSE", nrank = 5, saveFigure = FALSE, outdir)
 }
 \arguments{
 \item{rfList}{List of random forest models trained with the function \code{\link[RMFinventory]{makeModels}}}

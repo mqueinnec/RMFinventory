@@ -4,8 +4,17 @@
 \alias{sampleCells}
 \title{Stratified random sampling}
 \usage{
-sampleCells(strata_layer, matrix_strata, existing_sample, toSample,
-  mindist, message = TRUE, wrow = 3, wcol = 3, checkStrata = FALSE)
+sampleCells(
+  strata_layer,
+  matrix_strata,
+  existing_sample,
+  toSample,
+  mindist,
+  message = TRUE,
+  wrow = 3,
+  wcol = 3,
+  checkStrata = FALSE
+)
 }
 \arguments{
 \item{strata_layer}{RasterLayer. A layer of candidates cells that can be sampled. The value of each cell should be the strata ID}

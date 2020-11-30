@@ -4,11 +4,26 @@
 \alias{scatter}
 \title{Scatterplot with information on the errors between x and y (From Piotr Tompalski)}
 \usage{
-scatter(x, y, R2 = T, axisorder = "OP", xlab = "Observed",
-  ylab = "Predicted", title = NULL, info = T, position = 0,
-  positionauto = T, lowerlimit = NA, upperlimit = NA, size = 2,
-  alpha = 1, normality = T, add.reg.line = F, rug = F,
-  label_text = c("n", "bias", "bias\%", "RMSE", "RMSE\%", "p-value"))
+scatter(
+  x,
+  y,
+  R2 = T,
+  axisorder = "OP",
+  xlab = "Observed",
+  ylab = "Predicted",
+  title = NULL,
+  info = T,
+  position = 0,
+  positionauto = T,
+  lowerlimit = NA,
+  upperlimit = NA,
+  size = 2,
+  alpha = 1,
+  normality = T,
+  add.reg.line = F,
+  rug = F,
+  label_text = c("n", "bias", "bias\%", "RMSE", "RMSE\%", "p-value")
+)
 }
 \arguments{
 \item{x}{a vector of observed data.}

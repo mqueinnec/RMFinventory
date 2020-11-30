@@ -4,8 +4,7 @@
 \alias{makeModels}
 \title{ABA models and accuracy assessment}
 \usage{
-makeModels(dat, attNames, preds, k = 5, titles, saveModel, saveFigure,
-  outdir)
+makeModels(dat, attNames, preds, k = 5, titles, saveModel, saveFigure, outdir)
 }
 \arguments{
 \item{dat}{data.frame. Need to contain both forest attributes and ALS metrics}

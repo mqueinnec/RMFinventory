@@ -4,8 +4,13 @@
 \alias{getPCAstrata}
 \title{Define or retrieve strata from a layer with PCA values}
 \usage{
-getPCAstrata(PCA_layer, method = "equal_interval", nbreaks, breaks,
-  summary = FALSE)
+getPCAstrata(
+  PCA_layer,
+  method = "equal_interval",
+  nbreaks,
+  breaks,
+  summary = FALSE
+)
 }
 \arguments{
 \item{PCA_layer}{update}

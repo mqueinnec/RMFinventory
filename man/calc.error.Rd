@@ -4,8 +4,14 @@
 \alias{calc.error}
 \title{Calculate bias, RMSE, corellation etc of two vectors.}
 \usage{
-calc.error(reference, estimate, by = NULL, noinfo = TRUE,
-  dist.normal = TRUE, short = FALSE)
+calc.error(
+  reference,
+  estimate,
+  by = NULL,
+  noinfo = TRUE,
+  dist.normal = TRUE,
+  short = FALSE
+)
 }
 \arguments{
 \item{reference}{a vector of reference values}
