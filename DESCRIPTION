@@ -1,7 +1,7 @@
 Package: RMFinventory
 Type: Package
 Title: What the Package Does (Title Case)
-Version: 0.1.0
+Version: 0.0.0.9000
 Author: Who wrote it
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: More about what it does (maybe more than one line)
@@ -15,9 +15,12 @@ Imports:
     tidyr,
     randomForest,
     ggplot2,
-    raster
+    raster, 
+    scatter
 RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown
+Remotes: 
+    ptompalski/scatter
 VignetteBuilder: knitr
