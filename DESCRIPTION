@@ -15,12 +15,11 @@ Imports:
     tidyr,
     randomForest,
     ggplot2,
-    raster, 
-    scatter
+    raster
 RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown
 Remotes: 
-    ptompalski/scatter
+    github::ptompalski/scatter
 VignetteBuilder: knitr
