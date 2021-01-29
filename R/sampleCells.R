@@ -31,7 +31,7 @@ sampleCells <- function(strata_layer,
   }
 
   if(missing(existing_sample)) {
-    addSamples <- data.frame()
+    addSamples <- data.frame(strata = NA, toSample = NA)
     extraCols <- character(0)
   }else{
     if(!is(existing_sample, "data.frame")) {
@@ -61,6 +61,14 @@ sampleCells <- function(strata_layer,
     stop("toSample must have at least two columns: strata and number of cells to sample")
   }
 
+  # What will be the first strata where sample is needed?
+  # Use to initiate the out object at the end of the script
+  first_strata_sampled <- which(toSample[,2] > 0)[1]
+
+  if (is.na(first_strata_sampled)) {
+    stop("Number of cells to sample for all strata == 0")
+  }
+
   # Check that all strata to sample correspond to a valid PCA_layer strata
   unique_strata_toSample <- unique(toSample[,1])
   if (checkStrata) {
@@ -79,6 +87,7 @@ sampleCells <- function(strata_layer,
     if (message) message(sprintf("Strata %s (%d/%d): %d cells to sample",s,i,length(unique_strata_toSample), need))
 
     if(need > 0) {
+
       # Mask all cells that are not strata
       group_s <- raster::mask(strata_layer, mask = strata_layer, maskvalue = s, inverse = TRUE)
       names(group_s) <- "strata"
@@ -91,8 +100,8 @@ sampleCells <- function(strata_layer,
       suppressWarnings(group_s_cluster <- raster::focal(group_s, w = w, na.rm = FALSE, pad = FALSE, NAonly = FALSE))
       names(group_s_cluster) <- "strata"
 
-      values_strata_cluster <- is.na(getValues(group_s_cluster))
-      group_s_cluster_cells <- 1:ncell(group_s_cluster)
+      values_strata_cluster <- is.na(raster::getValues(group_s_cluster))
+      group_s_cluster_cells <- 1:raster::ncell(group_s_cluster)
       validCells_s_cluster <- group_s_cluster_cells[!values_strata_cluster]
 
       #Initiate number of sampled cells
@@ -157,7 +166,7 @@ sampleCells <- function(strata_layer,
         names(group_s_ext_cluster) <- "strata"
 
         values_strata_ext <- is.na(getValues(group_s_ext_cluster))
-        group_s_ext_cluster_cells <- 1:ncell(group_s_ext_cluster)
+        group_s_ext_cluster_cells <- 1:raster::ncell(group_s_ext_cluster)
         validCells_s_ext_cluster <- group_s_ext_cluster_cells[!values_strata_ext]
 
         # While loop for RULE 2
@@ -191,7 +200,7 @@ sampleCells <- function(strata_layer,
       if (nCount < need) {
 
         val_strata <- is.na(raster::getValues(group_s))
-        group_s_cells <- 1:ncell(group_s)
+        group_s_cells <- 1:raster::ncell(group_s)
         validCells_s <- group_s_cells[!val_strata]
         #We still don't have enough samples, select isolated
 
@@ -239,7 +248,7 @@ sampleCells <- function(strata_layer,
 
         # Create out object if first iteration of loop
         # Else just rbind output with what has been processed in the loop
-        if (i == 1) {
+        if (i == first_strata_sampled) {
           out <- add_strata
         }else{
           out <- rbind(out,add_strata)
