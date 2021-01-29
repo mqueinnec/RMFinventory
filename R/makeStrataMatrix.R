@@ -6,7 +6,6 @@
 #'
 #' @export
 #'
-
 makeStrataMatrix <- function(nbreaks) {
   matrix_strata <- matrix(NA,nr=nbreaks[2]-1,nc=nbreaks[1]-1)
   for(i in 1:(nbreaks[1]-1)){
@@ -17,7 +16,15 @@ makeStrataMatrix <- function(nbreaks) {
   matrix_strata
   }
 
+#' Neighbouring strata
+#'
+#' @param matrix A matrix
+#' @param strata Strata number
+#'
+#' @export
+
 getNeiMatrix <- function(matrix, strata) {
+
   ind_strata <- which(matrix==strata,arr.ind=T)
   if (ind_strata[1]==dim(matrix)[1]){ #If on edge
     select_rows <- c((ind_strata[1]-1):(ind_strata[1]))
