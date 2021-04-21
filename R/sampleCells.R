@@ -69,6 +69,16 @@ sampleCells <- function(strata_layer,
     stop("Number of cells to sample for all strata == 0")
   }
 
+  # Add strata in existing_strata but missing in toSample
+  missing_strata <- addSamples %>%
+    filter(!strata %in% toSample$strata)
+
+  if(NROW(missing_strata) > 0){
+    temp_df <- data.frame(missing_strata$strata, 0)
+    colnames(temp_df) <- colnames(toSample)
+    toSample <- rbind(toSample, temp_df)
+  }
+
   # Check that all strata to sample correspond to a valid PCA_layer strata
   unique_strata_toSample <- unique(toSample[,1])
   if (checkStrata) {
@@ -86,13 +96,15 @@ sampleCells <- function(strata_layer,
 
     if (message) message(sprintf("Strata %s (%d/%d): %d cells to sample",s,i,length(unique_strata_toSample), need))
 
-    if(need > 0) {
+    # Select existing sample with current strata
+    add_strata <- addSamples %>%
+      filter(strata == s)
+
+    if(need > 0 | NROW(add_strata) > 0) {
 
       # Mask all cells that are not strata
       group_s <- raster::mask(strata_layer, mask = strata_layer, maskvalue = s, inverse = TRUE)
       names(group_s) <- "strata"
-
-      #Assign NA to cells already sampled
 
       # RULE 1: select only cells surrounded by cells with same strata
       w <- matrix(1/(wrow*wcol), nr = wrow, nc = wcol) #Focal window
@@ -105,13 +117,24 @@ sampleCells <- function(strata_layer,
       validCells_s_cluster <- group_s_cluster_cells[!values_strata_cluster]
 
       #Initiate number of sampled cells
-      add_strata <- dplyr::filter(addSamples, strata == s)
       if(NROW(add_strata) > 0) {
         add_strata$type <- "Existing"
         if (! "cluster" %in% colnames(add_strata)){
           add_strata$cluster <- NA
         }
       }
+
+      # Get values of group_s_cluster at existing to retrieve sample type
+      add_strata$cluster <- apply(add_strata, 1, function(x) {
+        if(is.na(x["cluster"])) {
+          cluster_val <- raster::extract(group_s_cluster, matrix(as.numeric(x[c("x", "y")]), ncol = 2))
+          out <- ifelse(is.na(cluster_val), NA, "cluster")
+        }else{
+          out <- x["cluster"]
+        }
+        return(unname(out))
+      })
+
       nCount <- 0 #Number of sampled cells
 
       if (message) message("Selecting in clusters ...")
@@ -137,7 +160,7 @@ sampleCells <- function(strata_layer,
           add_strata <- add_temp[,c("x","y","strata","cluster","type",extraCols)]
           nCount = nCount +1
         }else{ # Else, check distance with all other sampled cells in strata
-          dist <- spatstat::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
+          dist <- spatstat.geom::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
           if(all(as.numeric(dist)>mindist)){ # Is all less than mindist, accept sampled cell otherwise reject
             add_strata <- rbind(add_strata, add_temp[,c("x","y","strata","cluster","type",extraCols)])
             nCount = nCount + 1
@@ -147,7 +170,7 @@ sampleCells <- function(strata_layer,
 
       # OUT OF RULE 1
 
-      if (nCount < need) {
+      if (nCount < need | any(is.na(add_strata$cluster))) {
         #We still don't have enough samples, select within extended strata clusters (RULE 2)
 
         # Get strata that are located in the "neighbourhood" of current strata
@@ -164,6 +187,17 @@ sampleCells <- function(strata_layer,
         suppressWarnings(group_s_ext_cluster <- raster::focal(group_s_ext, w = w, na.rm = FALSE, pad = FALSE))
         suppressWarnings(group_s_ext_cluster <- raster::mask(group_s_ext_cluster,group_s))
         names(group_s_ext_cluster) <- "strata"
+
+        # Get values of group_s_ext_cluster at existing to retrieve sample type
+        add_strata$cluster <- apply(add_strata, 1, function(x) {
+          if(is.na(x["cluster"])) {
+            cluster_val <- raster::extract(group_s_ext_cluster, matrix(as.numeric(x[c("x", "y")]), ncol = 2))
+            out <- ifelse(is.na(cluster_val), NA, "cluster extended")
+          }else{
+            out <- x["cluster"]
+          }
+          return(unname(out))
+        })
 
         values_strata_ext <- is.na(getValues(group_s_ext_cluster))
         group_s_ext_cluster_cells <- 1:raster::ncell(group_s_ext_cluster)
@@ -188,7 +222,7 @@ sampleCells <- function(strata_layer,
             add_strata <- add_temp[,c("x","y","strata","cluster","type",extraCols)]
             nCount = nCount +1
           }else{
-            dist <- spatstat::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
+            dist <- spatstat.geom::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
             if(all(as.numeric(dist)>mindist)){
               add_strata <- rbind(add_strata, add_temp[,c("x","y","strata","cluster","type",extraCols)])
               nCount = nCount +1
@@ -197,7 +231,19 @@ sampleCells <- function(strata_layer,
         }
       }
 
-      if (nCount < need) {
+      if (nCount < need | any(is.na(add_strata$cluster))) {
+
+        # Get values of group_s at existing to retrieve sample type
+        add_strata$cluster <- apply(add_strata, 1, function(x) {
+          if(is.na(x["cluster"])) {
+            cluster_val <- raster::extract(group_s, matrix(as.numeric(x[c("x", "y")]), ncol = 2))
+            out <- ifelse(is.na(cluster_val), NA, "isolated")
+          }else{
+            out <- x["cluster"]
+          }
+          return(unname(out))
+        })
+
 
         val_strata <- is.na(raster::getValues(group_s))
         group_s_cells <- 1:raster::ncell(group_s)
@@ -223,7 +269,7 @@ sampleCells <- function(strata_layer,
             add_strata <- add_temp[,c("x","y","strata","cluster","type",extraCols)]
             nCount = nCount +1
           }else{
-            dist <- spatstat::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
+            dist <- spatstat.geom::crossdist(add_temp$x,add_temp$y,add_strata$x,add_strata$y)
             if(all(as.numeric(dist)>mindist)){
               add_strata <- rbind(add_strata, add_temp[,c("x","y","strata","cluster","type",extraCols)])
               nCount = nCount +1

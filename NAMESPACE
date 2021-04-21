@@ -3,6 +3,7 @@
 export(calc.error)
 export(getNeiMatrix)
 export(getPCAstrata)
+export(getVolume)
 export(makeModels)
 export(makeStrataMatrix)
 export(mode)

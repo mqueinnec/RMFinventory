@@ -16,6 +16,8 @@ Imports:
     randomForest,
     ggplot2,
     raster,
+    spatstat.geom,
+    spatstat (>= 2.0-0),
     scatter
 Remotes: ptompalski/scatter
 RoxygenNote: 7.1.1
@@ -23,3 +25,5 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)

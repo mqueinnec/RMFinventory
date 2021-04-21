@@ -347,7 +347,7 @@ existing_plots <- data.frame(plotID = plots_metrics$plotID,
 existing_plots
 
 
-new_plots <- RMFinventory ::sampleCells(strata_layer = strata_candidates,
+new_plots <- RMFinventory::sampleCells(strata_layer = strata_candidates,
                          matrix_strata = strata$matrix, 
                          existing_sample = existing_plots, # You can provide a set of existing plots or output of previous call to sampleCells and these cells won't be sampled again.
                          toSample = toSample, 
