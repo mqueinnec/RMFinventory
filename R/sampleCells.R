@@ -31,7 +31,7 @@ sampleCells <- function(strata_layer,
   }
 
   if(missing(existing_sample)) {
-    addSamples <- data.frame(strata = NA, toSample = NA)
+    addSamples <- data.frame()
     extraCols <- character(0)
   }else{
     if(!is(existing_sample, "data.frame")) {
@@ -53,29 +53,32 @@ sampleCells <- function(strata_layer,
   #     cells_toRemove <- raster::cellFromXY(strata_layer, matrix(c(addSamples$x, addSamples$y), nc = 2))
   #     strata_layer[cells_toRemove] <- NA
   #   }
-   }
+  }
 
-  if(!is(toSample, "data.frame")) {
+  if(missing(toSample)) {
+    toSample <- data.frame()
+  }else if(!is(toSample, "data.frame")) {
     stop("toSample must be a data.frame")
   }else if (NCOL(toSample) < 2){
     stop("toSample must have at least two columns: strata and number of cells to sample")
   }
 
-  # What will be the first strata where sample is needed?
-  # Use to initiate the out object at the end of the script
-  first_strata_sampled <- which(toSample[,2] > 0)[1]
-
-  if (is.na(first_strata_sampled)) {
-    stop("Number of cells to sample for all strata == 0")
+  if (NROW(toSample) == 0 & NROW(addSamples) == 0) {
+    stop("No cells to sample and no existing plots")
   }
 
   # Add strata in existing_strata but missing in toSample
-  missing_strata <- addSamples %>%
-    filter(!strata %in% toSample$strata)
+  if(NROW(toSample) > 0) {
+    missing_strata <- dplyr::filter(addSamples, !strata %in% toSample[,2])
+    missing_strata <- missing_strata$strata
+  }else{
+    missing_strata <- addSamples$strata
+  }
 
-  if(NROW(missing_strata) > 0){
-    temp_df <- data.frame(missing_strata$strata, 0)
-    colnames(temp_df) <- colnames(toSample)
+
+  if(length(missing_strata) > 0){
+    temp_df <- data.frame(missing_strata, 0)
+    colnames(temp_df) <- c("strata", "toSample")
     toSample <- rbind(toSample, temp_df)
   }
 
@@ -88,17 +91,29 @@ sampleCells <- function(strata_layer,
     }
   }
 
+  # What will be the first strata where sample is needed?
+  # Use to initiate the out object at the end of the script
+  if(NROW(toSample) > 0){
+    first_strata_sampled <- which(toSample[,2] > 0)[1]
+
+    if (is.na(first_strata_sampled)) {
+      warning("Number of cells to sample for all strata == 0. Calculating only cluster type of exisiting plots.")
+      first_strata_sampled <- 1
+    }
+  }else{
+    stop("No cells to sample and no existing plots")
+  }
+
   # Main loop through each strata
 
-  for(i in 1:NROW(toSample)) {
-    s <- toSample[i, 1] #strata
-    need <- toSample[i,2] #number of cells to sample
+  for(i in 1:length(unique_strata_toSample)) {
+    s <- unique_strata_toSample[i] #strata
+    need <- sum(toSample[toSample[,1] == s, 2]) #number of cells to sample
 
     if (message) message(sprintf("Strata %s (%d/%d): %d cells to sample",s,i,length(unique_strata_toSample), need))
 
     # Select existing sample with current strata
-    add_strata <- addSamples %>%
-      filter(strata == s)
+    add_strata <- dplyr::filter(addSamples, strata == s)
 
     if(need > 0 | NROW(add_strata) > 0) {
 
