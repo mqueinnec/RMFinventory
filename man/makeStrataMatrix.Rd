@@ -4,10 +4,12 @@
 \alias{makeStrataMatrix}
 \title{Matrix of strata}
 \usage{
-makeStrataMatrix(nbreaks)
+makeStrataMatrix(nbreaks, all_strata)
 }
 \arguments{
-\item{nbreaks}{}
+\item{nbreaks}{Number of breaks}
+
+\item{all_strata}{Data frame with all possible strata (breaks and ID)}
 }
 \description{
 This function returns a matrix of strata base on the number of breaks

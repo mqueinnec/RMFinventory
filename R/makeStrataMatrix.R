@@ -2,18 +2,24 @@
 #'
 #' This function returns a matrix of strata base on the number of breaks
 #'
-#' @param nbreaks
+#' @param nbreaks Number of breaks
+#' @param all_strata Data frame with all possible strata (breaks and ID)
 #'
 #' @export
 #'
-makeStrataMatrix <- function(nbreaks) {
-  matrix_strata <- matrix(NA,nr=nbreaks[2]-1,nc=nbreaks[1]-1)
-  for(i in 1:(nbreaks[1]-1)){
-    for(j in 1:(nbreaks[2]-1)){
-      matrix_strata[j,i] <- as.numeric(sprintf("%i%i",i,j))
-    }
-  }
-  matrix_strata
+makeStrataMatrix <- function(nbreaks, all_strata) {
+
+  all_strata <- dplyr::arrange(all_strata, names(all_strata)[1], names(all_strata)[1])
+
+  matrix_strata <- matrix(all_strata$strata,nr=nbreaks[2]-1,nc=nbreaks[1]-1, byrow = FALSE)
+  # matrix_strata <- matrix(NA,nr=nbreaks[2]-1,nc=nbreaks[1]-1)
+  # for(i in 1:(nbreaks[1]-1)){
+  #   for(j in 1:(nbreaks[2]-1)){
+  #     matrix_strata[j,i] <- all_strata[i,j]
+  #       as.numeric(sprintf("%i%i",i,j))
+  #   }
+  # }
+  return(matrix_strata)
   }
 
 #' Neighbouring strata

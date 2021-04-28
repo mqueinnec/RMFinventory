@@ -10,7 +10,8 @@
 #' @param message Logical. Should messages be printed to console while the function is running
 #' @param wrow Number of row in the focal window (default is 3)
 #' @param wcol Number of columns in the focal window (default is 3)
-#' @param checkStrata Logical. If TRUE, will calculate unique values of strata layer and will check if they match the ones provided in toSample. Default is FALSE
+#' @param checkStrataMatrix Logical. If TRUE, will calculate unique values of strata layer and will check if they match the ones provided in toSample. Default is FALSE
+#' @param checkStrataRaster Logical. If TRUE, will calculate unique values of strata layer and will check if they match the ones provided in toSample. Default is FALSE
 #' @export
 #'
 #' @importFrom raster %in%
@@ -24,7 +25,8 @@ sampleCells <- function(strata_layer,
                         message = TRUE,
                         wrow = 3,
                         wcol = 3,
-                        checkStrata = FALSE) {
+                        checkStrataMatrix = TRUE,
+                        checkStrataRaster = FALSE) {
 
   if(!is(strata_layer, "RasterLayer")) {
     stop("strata_layer must be a RasterLayer object (opened with the raster function)")
@@ -69,7 +71,11 @@ sampleCells <- function(strata_layer,
 
   # Add strata in existing_strata but missing in toSample
   if(NROW(toSample) > 0) {
-    missing_strata <- dplyr::filter(addSamples, !strata %in% toSample[,2])
+    # Assign column names to toSample
+    toSample <- toSample[,1:2]
+    colnames(toSample) <- c("strata", "toSample")
+
+    missing_strata <- dplyr::filter(addSamples, !strata %in% toSample[,1])
     missing_strata <- missing_strata$strata
   }else{
     missing_strata <- addSamples$strata
@@ -84,7 +90,13 @@ sampleCells <- function(strata_layer,
 
   # Check that all strata to sample correspond to a valid PCA_layer strata
   unique_strata_toSample <- unique(toSample[,1])
-  if (checkStrata) {
+  if(checkStrataMatrix){
+    if(any(!unique_strata_toSample %in% matrix_strata)) {
+      stop("Not all strata to sample correspond to a strata in matrix_strata")
+    }
+  }
+
+  if (checkStrataRaster) {
     unique_strata_layer <- raster::unique(strata_layer)
     if(!all(unique_strata_toSample %in% unique_strata_layer)) {
       stop("Not all strata to sample correspond to a strata in PCA_layer")
@@ -92,13 +104,9 @@ sampleCells <- function(strata_layer,
   }
 
   # What will be the first strata where sample is needed?
-  # Use to initiate the out object at the end of the script
   if(NROW(toSample) > 0){
-    first_strata_sampled <- which(toSample[,2] > 0)[1]
-
-    if (is.na(first_strata_sampled)) {
+    if (all(toSample[,2] == 0)) {
       warning("Number of cells to sample for all strata == 0. Calculating only cluster type of exisiting plots.")
-      first_strata_sampled <- 1
     }
   }else{
     stop("No cells to sample and no existing plots")
@@ -307,15 +315,21 @@ sampleCells <- function(strata_layer,
         add_strata <- add_strata[,c("x","y","strata","cluster","type",extraCols)]
 
 
-        # Create out object if first iteration of loop
+        # Create out object if it doesn't exist already
         # Else just rbind output with what has been processed in the loop
-        if (i == first_strata_sampled) {
+        if(!exists("out")){
           out <- add_strata
         }else{
           out <- rbind(out,add_strata)
         }
+
       }
     }
   }
-  out
+
+  if(exists("out")){
+    return(out)
+  }else{
+    return(NA)
+  }
 }

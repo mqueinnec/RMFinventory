@@ -13,7 +13,8 @@ sampleCells(
   message = TRUE,
   wrow = 3,
   wcol = 3,
-  checkStrata = FALSE
+  checkStrataMatrix = TRUE,
+  checkStrataRaster = FALSE
 )
 }
 \arguments{
@@ -33,7 +34,9 @@ sampleCells(
 
 \item{wcol}{Number of columns in the focal window (default is 3)}
 
-\item{checkStrata}{Logical. If TRUE, will calculate unique values of strata layer and will check if they match the ones provided in toSample. Default is FALSE}
+\item{checkStrataMatrix}{Logical. If TRUE, will calculate unique values of strata layer and will check if they match the ones provided in toSample. Default is FALSE}
+
+\item{checkStrataRaster}{Logical. If TRUE, will calculate unique values of strata layer and will check if they match the ones provided in toSample. Default is FALSE}
 }
 \description{
 This is the function implementing the stratified random sampling approach

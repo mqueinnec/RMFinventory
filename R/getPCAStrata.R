@@ -75,7 +75,9 @@ getPCAstrata <- function(PCA_layer,
 
   # Assingn strata to df
   all_strata <- do.call(tidyr::crossing, lapply(breaks, function(x) seq(from = 1, length.out = length(x) - 1)))
-  all_strata <- do.call(paste0, as.list(all_strata))
+  # Add strata ID
+  all_strata$strata <- 1:NROW(all_strata)
+  # all_strata <- do.call(paste0, as.list(all_strata))
 
   strata <- lapply(seq_along(breaks), function(x) {findInterval(PCA_layer[[names(breaks)[x]]], breaks[[x]], rightmost.closed = TRUE)})
   names(strata) <- names(breaks)
@@ -83,24 +85,31 @@ getPCAstrata <- function(PCA_layer,
 
   PCA_strata <- strata
 
-  strata <- do.call(paste0,strata)
+  strata_df <- as.data.frame(strata)
+  strata_df$rowID <- 1:NROW(strata_df)
 
-  strata <- factor(strata, levels = all_strata, ordered = T)
+  strata_ID_df <- merge(strata_df, all_strata, sort = FALSE)
 
-  PCA_layer$strata <- strata
+  strata_ID_df$strata <- factor(strata_ID_df$strata, levels = all_strata$strata, ordered = T)
+
+  # Make sure that strata_df is ordered by rowID
+  strata_ID_df <- dplyr::arrange(strata_ID_df, rowID)
+
+  PCA_layer <- strata_ID_df
 
   if (summary) {
-    PCA_layer_summary <- dplyr::group_by(PCA_layer, strata) %>%
-      dplyr::summarize(count = n(), frac = n()/NROW(PCA_layer)) %>%
+    PCA_layer_summary <- strata_ID_df %>%
+      dplyr::group_by(strata) %>%
+      dplyr::summarize(count = n(), frac = n()/NROW(strata_ID_df)) %>%
       tidyr::complete(strata, fill = list(count = 0, frac = 0))
   }
 
   if (returnRaster) {
-
-    df_temp <- data.frame(strata = strata, cells = cells)
+    strata_ID_df$cells <- cells
     seq_cells <- seq(from = 1, to = raster::ncell(raster::subset(PCA_layer_r,1)))
-    if (NROW(df_temp) != length(seq_cells)) {
-      df_temp <- rbind(df_temp, data.frame(strata = NA, cells = seq_cells[!(seq_cells %in% df_temp$cells)]))
+    # Assign back NA values to cells
+    if (NROW(strata_ID_df) != length(seq_cells)) {
+      df_temp <- rbind(strata_ID_df[,c("strata", "cells")], data.frame(strata = NA, cells = seq_cells[!(seq_cells %in% strata_ID_df$cells)]))
     }
     df_temp <- dplyr::arrange(df_temp, cells)
     PCA_layer <- raster::setValues(raster::subset(PCA_layer_r,1), as.numeric(as.character(df_temp$strata)))
@@ -117,6 +126,6 @@ getPCAstrata <- function(PCA_layer,
                 PCA_strata = PCA_strata,
                 breaks = breaks)
   }
-  out$matrix <- makeStrataMatrix(nbreaks)
+  out$matrix <- makeStrataMatrix(nbreaks, all_strata)
   out
 }

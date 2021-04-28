@@ -4,12 +4,12 @@
 \alias{getNeiMatrix}
 \title{Neighbouring strata}
 \usage{
-getNeiMatrix(matrix, n)
+getNeiMatrix(matrix, strata)
 }
 \arguments{
 \item{matrix}{A matrix}
 
-\item{n}{Strata number}
+\item{strata}{Strata number}
 }
 \description{
 Neighbouring strata
